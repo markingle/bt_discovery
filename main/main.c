@@ -231,6 +231,8 @@ static void bt_app_gap_cb(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *pa
 
     case ESP_BT_GAP_READ_REMOTE_NAME_EVT:
         //ESP_LOGI(GAP_TAG, "Device found: %s", bda2str(param->read_rmt_name.rmt_name, bda_str, 18));
+
+        // TO DO - This line is causing the ESP to crash randomly....
         ESP_LOGI(GAP_TAG, "Remote Device Name: %s", bdrmtname2str(param->read_rmt_name.rmt_name, device_name, ESP_BT_GAP_MAX_BDNAME_LEN+1));
         //printf("Device Name: %s\n", param->read_rmt_name.rmt_name);
 
