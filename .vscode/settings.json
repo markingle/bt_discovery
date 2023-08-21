@@ -1,0 +1,7 @@
+{
+    "idf.flashType": "UART",
+    "idf.port": "/dev/cu.usbserial-0238A5E9",
+    "idf.adapterTargetName": "esp32",
+    "C_Cpp.errorSquiggles": "enabled",
+    "C_Cpp.intelliSenseEngine": "Tag Parser"
+}
