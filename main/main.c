@@ -39,6 +39,7 @@ static QueueHandle_t uart0_queue;
 
 static const char *TAG = "uart_events";
 
+int min_tx_power_level, max_tx_power_level;
 
 typedef enum {
     APP_GAP_STATE_IDLE = 0,
@@ -114,21 +115,81 @@ static char *bda2str(esp_bd_addr_t bda, char *str, size_t size)
     return str;
 }
 
-static char *parsevalue(char *data_string)
-
+static void startup_bt(void)
 {
-    char str[30];
-    char * pch;
-    sprintf(str, "%s",data_string);
-    ESP_LOGI(TAG, "New String: %s", str);
-    pch = strtok(str,"=");
-    while (pch != NULL)
-        {
-            ESP_LOGI(TAG, "PCH!!!: %s", pch);
-            pch = strtok (NULL, "=");
-            data_string = pch;
-        }
-    return data_string;
+    esp_err_t ret;
+
+    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    if ((ret = esp_bt_controller_init(&bt_cfg)) != ESP_OK) {
+        ESP_LOGE(GAP_TAG, "%s initialize controller failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    if ((ret = esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT)) != ESP_OK) {
+        ESP_LOGE(GAP_TAG, "%s enable controller failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    if ((ret = esp_bluedroid_init()) != ESP_OK) {
+        ESP_LOGE(GAP_TAG, "%s initialize bluedroid failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    if ((ret = esp_bluedroid_enable()) != ESP_OK) {
+        ESP_LOGE(GAP_TAG, "%s enable bluedroid failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    if ((ret = esp_bredr_tx_power_set(max_tx_power_level, max_tx_power_level)) != ESP_OK) {
+        ESP_LOGE(GAP_TAG, "%s set RSSI power level failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+}
+
+static void reset_rssi(uint8_t * pwr_level)
+{
+    esp_err_t ret;
+    //ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_BLE));
+
+    //esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+    if ((ret = esp_bluedroid_disable()) != ESP_OK) {
+        ESP_LOGE(GAP_TAG, "%s disable bluedroid failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    if ((ret = esp_bluedroid_deinit()) != ESP_OK) {
+        ESP_LOGE(GAP_TAG, "%s De-initialize bluedroid failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    if ((ret = esp_bt_controller_disable()) != ESP_OK) {
+        ESP_LOGE(GAP_TAG, "%s disable controller failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    if ((ret = esp_bt_controller_deinit()) != ESP_OK) {
+        ESP_LOGE(GAP_TAG, "%s De-initialize controller failed: %s\n", __func__, esp_err_to_name(ret));
+        return;
+    }
+
+    //ESP_ERROR_CHECK(esp_bt_mem_release(ESP_BT_MODE_BLE));
+    if (pwr_level == 0){
+        max_tx_power_level = ESP_PWR_LVL_N0;
+        ESP_LOGE(GAP_TAG, "Power level set to 0dbm");
+    }
+
+    if (pwr_level == 3){
+        max_tx_power_level = ESP_PWR_LVL_P3;
+        ESP_LOGE(GAP_TAG, "Power level set to +3dbm");
+    }
+
+    ESP_LOGE(GAP_TAG, "RSSI reset completed!!!");
+
+    /*if (esp_bredr_tx_power_set(max_tx_power_level, max_tx_power_level)) {
+        ESP_LOGE(GAP_TAG, "Set NEW RSSI power level success!!!!");
+    } else {
+        ESP_LOGE(GAP_TAG, "Reset failed!!!");
+    }*/
 }
 
 static void update_device_info(esp_bt_gap_cb_param_t *param)
@@ -288,7 +349,7 @@ static void bt_app_gap_start_up(void)
     /* register GAP callback function */
     esp_bt_gap_register_callback(bt_app_gap_cb);
 
-    char *dev_name = "ESP_GAP_INQRUIY";
+    char *dev_name = "PROBE TEC DONGLE";
     esp_bt_dev_set_device_name(dev_name);
 
     /* set discoverable and connectable mode, wait to be connected */
@@ -330,20 +391,34 @@ static void uart_event_task(void *pvParameters)
                     data[len] = '\0';
                         //bt_app_gap_start_up();
                     sprintf(str, "%s", (char *) data);
-                    //ESP_LOGI(TAG, "New String: %s", str);
                     cmd = strtok(str,"=");
                     param = strtok(NULL,"=");
                     ESP_LOGI(TAG, "Command: %s", cmd);
                     ESP_LOGI(TAG, "Parameter: %s", param);
-                    if (strcmp((char*)cmd, "rssi") == 0)
-                        {
-                           ESP_LOGI(TAG, "Set RSSI");
+                    if (strcmp((char*)cmd, "rssi") == 0){
+                        int pwr_level = atoi(param);
+                        if (pwr_level == 0){
+                            ESP_LOGI(TAG, "Power 0");
+                            reset_rssi(pwr_level);
                         }
-                    if (cmd == 'btaddr')
-                        {
-                            ESP_LOGI(TAG, "Set BT ADDRESS");
+                        if (pwr_level == 3){
+                            ESP_LOGI(TAG, "Power 3");
+                            reset_rssi(pwr_level);
                         }
-                    ESP_LOGI(TAG, "YoYO!!!");
+                           //ESP_LOGI(TAG, "Resetting RSSI");
+                           //reset_rssi(param);
+                           //ESP_LOGI(TAG, "Called RSSI");
+                        }
+                    if (strcmp((char*)cmd, "bt_up") == 0){
+                        //ESP_LOGI(TAG, "BT up started");
+                        //param[len] ='\0';
+                        //ESP_LOGI(TAG, "Parameter: %s ---", param);
+                        //if (param == 1){
+                            ESP_LOGI(TAG, "Init BT");
+                            startup_bt();
+                            bt_app_gap_start_up();
+                        //}
+                    }
                 //Event of HW FIFO overflow detected
                 case UART_FIFO_OVF:
                     ESP_LOGI(TAG, "hw fifo overflow");
@@ -462,17 +537,12 @@ void app_main(void)
         return;
     }
 
-    if ((ret = esp_bt_dev_set_device_name("PC_DONGLE")) != ESP_OK) {
-        ESP_LOGE(GAP_TAG, "%s initialize device name failed: %s\n", __func__, esp_err_to_name(ret));
-        return;
-    }
-
-    if ((ret = esp_bredr_tx_power_set(ESP_PWR_LVL_N0, ESP_PWR_LVL_N0)) != ESP_OK) {
+    if ((ret = esp_bredr_tx_power_set(min_tx_power_level, min_tx_power_level)) != ESP_OK) {
         ESP_LOGE(GAP_TAG, "%s set RSSI power level failed: %s\n", __func__, esp_err_to_name(ret));
         return;
     }
 
-   // bt_app_gap_start_up();
+   bt_app_gap_start_up();
 
     esp_log_level_set(TAG, ESP_LOG_INFO);
 
