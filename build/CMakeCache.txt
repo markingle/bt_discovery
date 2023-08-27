@@ -14,6 +14,9 @@
 # EXTERNAL cache entries
 ########################
 
+//No help, variable specified on the command line.
+CCACHE_ENABLE:UNINITIALIZED=0
+
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=/Users/markbingle/.espressif/tools/xtensa-esp32-elf/esp-12.2.0_20230208/xtensa-esp32-elf/bin/xtensa-esp32-elf-addr2line
 
@@ -314,6 +317,9 @@ LINK_WITH_TRUSTED_STORAGE:BOOL=OFF
 MBEDTLS_FATAL_WARNINGS:BOOL=ON
 
 //No help, variable specified on the command line.
+PYTHON:UNINITIALIZED=/Users/markbingle/.espressif/python_env/idf5.2_py3.8_env/bin/python
+
+//No help, variable specified on the command line.
 PYTHON_DEPS_CHECKED:UNINITIALIZED=1
 
 //Allow unsafe builds. These builds ARE NOT SECURE.
@@ -578,6 +584,8 @@ _Python3_EXECUTABLE:INTERNAL=/Users/markbingle/.espressif/python_env/idf5.2_py3.
 //Python3 Properties
 _Python3_INTERPRETER_PROPERTIES:INTERNAL=Python;3;8;9;32;;;abi3;/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.8/lib/python3.8;/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.8/lib/python3.8;/Users/markbingle/.espressif/python_env/idf5.2_py3.8_env/lib/python3.8/site-packages;/Users/markbingle/.espressif/python_env/idf5.2_py3.8_env/lib/python3.8/site-packages
 _Python3_INTERPRETER_SIGNATURE:INTERNAL=1aa28971355c9b0009866cf5903c73bc
+//Interpreter reason failure
+_Python3_Interpreter_REASON_FAILURE:INTERNAL=
 //NumPy reason failure
 _Python3_NumPy_REASON_FAILURE:INTERNAL=
 
